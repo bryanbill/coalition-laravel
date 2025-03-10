@@ -63,7 +63,85 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    < /body >
+    $(document).ready(function() {
+        loadProducts();
 
-    <
-    /html >
+        // Form submission
+        $('#productForm').on('submit', function(e) {
+            e.preventDefault();
+            $.ajax({
+                url: "{{ route('submit') }}",
+                method: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    loadProducts();
+                    $('#productForm')[0].reset(); // Clear the form
+                }
+            });
+        });
+
+        // Save changes in the modal
+        $('#saveChangesBtn').on('click', function() {
+            const index = $('#editIndex').val();
+            const product_name = $('#editProductName').val();
+            const quantity = $('#editQuantity').val();
+            const price = $('#editPrice').val();
+
+            $.ajax({
+                url: `/edit/${index}`,
+                method: 'POST',
+                data: {
+                    product_name: product_name,
+                    quantity: quantity,
+                    price: price,
+                    _token: "{{ csrf_token() }}"
+                },
+                success: function(response) {
+                    $('#editModal').modal('hide');
+                    loadProducts();
+                }
+            });
+        });
+    });
+
+    function loadProducts() {
+        $.ajax({
+            url: "{{ route('home') }}",
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                $('#productTableBody').empty();
+                let totalSum = 0;
+
+                response.forEach((product, index) => {
+                    $('#productTableBody').append(`
+                            <tr>
+                                <td>${product.product_name}</td>
+                                <td>${product.quantity}</td>
+                                <td>${product.price}</td>
+                                <td>${product.datetime}</td>
+                                <td>${product.total_value}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" onclick="openEditModal(${index}, '${product.product_name}', ${product.quantity}, ${product.price})">Edit</button>
+                                </td>
+                            </tr>
+                        `);
+                    totalSum += parseFloat(product.total_value);
+                });
+
+                $('#totalSum').text(totalSum.toFixed(2));
+            }
+        });
+    }
+
+    function openEditModal(index, product_name, quantity, price) {
+        $('#editIndex').val(index);
+        $('#editProductName').val(product_name);
+        $('#editQuantity').val(quantity);
+        $('#editPrice').val(price);
+        $('#editModal').modal('show');
+    }
+    </script>
+</body>
+
+</html>
